@@ -2,14 +2,43 @@ const User = require('../models/User');
 const { generateInviteToken, verifyInviteToken, generateUserToken } = require('../utils/inviteGenerator');
 
 class AuthService {
-  generateInviteLink(role = 'Student', email = '', hostUrl = 'http://localhost:5000') {
+  async generateInviteLink(role = 'Student', email = '', frontendUrl = 'http://localhost:5173') {
     const validRoles = ['Student', 'Recruiter', 'Admin'];
     if (!validRoles.includes(role)) {
       throw new Error(`Invalid role. Must be one of: ${validRoles.join(', ')}`);
     }
+    if (!email) {
+      throw new Error('Email is required to send an invitation');
+    }
     const token = generateInviteToken(role, email);
-    const inviteLink = `${hostUrl}/api/auth/google?inviteToken=${token}`;
-    return { token, inviteLink, role };
+    const inviteLink = `${frontendUrl}/register?inviteToken=${token}`;
+
+    // Create the Invitation record in the DB
+    const Invitation = require('../models/Invitation');
+    const invitation = await Invitation.create({
+      email,
+      role,
+      token,
+      status: 'Pending'
+    });
+
+    // Send email using mailer
+    const { sendInvitationEmail } = require('../utils/mailer');
+    let emailResult = {};
+    try {
+      emailResult = await sendInvitationEmail(email, role, inviteLink);
+    } catch (err) {
+      console.error('Failed to send nodemailer email, but invitation logged in DB:', err);
+    }
+
+    return { 
+      token, 
+      inviteLink, 
+      role, 
+      email, 
+      invitation,
+      previewUrl: emailResult.previewUrl 
+    };
   }
 
   validateInvite(token) {
@@ -18,24 +47,47 @@ class AuthService {
     if (!decoded) throw new Error('Invalid or expired invitation token');
     return decoded;
   }
-  async processUserRegistration({ googleId, name, email, profilePicture, inviteToken }) {
-    const decodedInvite = this.validateInvite(inviteToken);
 
+  async processUserRegistration({ googleId, name, email, profilePicture, inviteToken, mockRole }) {
     let user = await User.findOne({ email });
     if (user) {
+      // Existing user login: allow without inviteToken validation, or validate if passed
+      if (inviteToken) {
+        this.validateInvite(inviteToken);
+        const Invitation = require('../models/Invitation');
+        await Invitation.findOneAndUpdate({ token: inviteToken }, { status: 'Completed' });
+      }
+      if (mockRole) {
+        user.role = mockRole;
+      }
       user.googleId = googleId || user.googleId;
       user.isVerified = true;
       await user.save();
-    } else {
-      user = await User.create({
-        googleId,
-        name,
-        email,
-        profilePicture,
-        role: decodedInvite.role || 'Student',
-        isVerified: true
-      });
+      return { user, authToken: generateUserToken(user) };
     }
+
+    // New user registration: requires inviteToken validation or mockRole in dev
+    let role = 'Student';
+    if (inviteToken) {
+      const decodedInvite = this.validateInvite(inviteToken);
+      role = decodedInvite.role || 'Student';
+      const Invitation = require('../models/Invitation');
+      await Invitation.findOneAndUpdate({ token: inviteToken }, { status: 'Completed' });
+    } else if (mockRole) {
+      role = mockRole;
+    } else {
+      throw new Error('An invitation token is required for registration');
+    }
+
+    user = await User.create({
+      googleId,
+      name,
+      email,
+      profilePicture,
+      role,
+      isVerified: true
+    });
+
     return { user, authToken: generateUserToken(user) };
   }
 }

@@ -3,14 +3,29 @@ const authService = require('../services/authService');
 const generateInvite = async (req, res) => {
   try {
     const { role, email } = req.body;
-    const hostUrl = `${req.protocol}://${req.get('host')}`;
-    const result = authService.generateInviteLink(role, email, hostUrl);
+    const origin = req.get('referer') || req.get('origin') || 'http://localhost:5173';
+    const frontendUrl = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+
+    const result = await authService.generateInviteLink(role, email, frontendUrl);
     return res.status(201).json({
-      message: 'Invitation link generated successfully',
+      message: 'Invitation generated and email sent successfully',
       ...result
     });
   } catch (error) {
     return res.status(400).json({ message: error.message });
+  }
+};
+
+const getInvitations = async (req, res) => {
+  try {
+    const Invitation = require('../models/Invitation');
+    const invitations = await Invitation.find().sort({ createdAt: -1 });
+    return res.status(200).json({
+      count: invitations.length,
+      invitations
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 
@@ -33,14 +48,15 @@ const initiateGoogleAuth = async (req, res) => {
 
 const handleGoogleCallback = async (req, res) => {
   try {
-    const { inviteToken, mockName, mockEmail, mockGoogleId } = req.query;
+    const { inviteToken, mockName, mockEmail, mockGoogleId, mockRole } = req.query;
 
     const userData = {
       googleId: mockGoogleId || req.user?.googleId || `google-id-${Date.now()}`,
       name: mockName || req.user?.name || 'Test User',
       email: mockEmail || req.user?.email || `user${Date.now()}@university.edu`,
       profilePicture: req.user?.profilePicture || '',
-      inviteToken
+      inviteToken,
+      mockRole
     };
 
     const { user, authToken } = await authService.processUserRegistration(userData);
@@ -57,6 +73,7 @@ const handleGoogleCallback = async (req, res) => {
 
 module.exports = {
   generateInvite,
+  getInvitations,
   initiateGoogleAuth,
   handleGoogleCallback
 };

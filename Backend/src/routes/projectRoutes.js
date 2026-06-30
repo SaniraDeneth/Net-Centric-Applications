@@ -13,7 +13,7 @@ router.get('/', projectController.getProjects);
 router.get('/:id', projectController.getProjectById);
 router.put('/:id', projectController.updateProject);
 router.delete('/:id', projectController.deleteProject);
-router.patch('/:id/visibility', restrictTo('Recruiter'), projectController.updateVisibility);
+router.patch('/:id/visibility', restrictTo('Recruiter', 'Admin'), projectController.updateVisibility);
 router.post('/:id/likes', interactionController.toggleLike);
 
 module.exports = router;

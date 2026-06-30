@@ -94,7 +94,7 @@ class ProjectService {
   }
 
   async updateVisibility(projectId, isPublic, user) {
-    if (user.role !== 'Recruiter') throw new Error('Forbidden: Only recruiters can update public visibility status');
+    if (user.role !== 'Recruiter' && user.role !== 'Admin') throw new Error('Forbidden: Only recruiters or admins can update public visibility status');
     const project = await Project.findById(projectId);
     if (!project) throw new Error('Project not found');
 
