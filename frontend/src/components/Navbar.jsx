@@ -24,7 +24,7 @@ const Navbar = () => {
         </Link>
 
         <div className="hidden md:flex items-center space-x-8">
-          <a href="#projects" className="text-sm text-zinc-400 hover:text-white transition-colors">Browse Projects</a>
+          <a href="projects" className="text-sm text-zinc-400 hover:text-white transition-colors">Browse Projects</a>
           <a href="#recruiters" className="text-sm text-zinc-400 hover:text-white transition-colors">For Recruiters</a>
           <a href="#students" className="text-sm text-zinc-400 hover:text-white transition-colors">Top Students</a>
         </div>
@@ -53,7 +53,7 @@ const Navbar = () => {
           animate={{ opacity: 1, y: 0 }}
           className="md:hidden absolute top-full left-0 w-full glass border-t border-zinc-800/50 py-4 px-6 flex flex-col space-y-4"
         >
-          <a href="#projects" className="text-sm text-zinc-400">Browse Projects</a>
+          <a href="projects" className="text-sm text-zinc-400">Browse Projects</a>
           <a href="#recruiters" className="text-sm text-zinc-400">For Recruiters</a>
           <a href="#students" className="text-sm text-zinc-400">Top Students</a>
           <hr className="border-zinc-800" />
