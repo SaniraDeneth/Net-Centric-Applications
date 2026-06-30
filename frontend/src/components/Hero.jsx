@@ -53,8 +53,11 @@ const Hero = () => {
 
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
             <button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3.5 rounded-full font-medium transition-all duration-300 shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:shadow-[0_0_30px_rgba(79,70,229,0.6)]">
-              Browse Projects
-              <ArrowRight className="w-4 h-4" />
+              <a href="/projects" className='flex items-center justify-center gap-2'>
+                Browse Projects
+                <ArrowRight className="w-4 h-4" />
+              </a>
+              
             </button>
             <button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-8 py-3.5 rounded-full font-medium border border-zinc-800 hover:border-zinc-700 transition-colors">
               I'm a Recruiter
