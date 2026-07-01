@@ -1,23 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FolderGit2, Users, PlusCircle, Search, 
   ExternalLink, Edit3, Clock, Globe, 
   Camera, Image as ImageIcon, X, ChevronRight,
-  Code, Bell
+  Code, Bell, CheckCheck, Loader2
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import ProjectCard from '../components/ProjectCard';
 import Navbar from '../components/Navbar';
+import NotificationsModal from '../components/NotificationsModal';
 import { useAuth } from '../context/AuthContext';
 
-const STUDENT_MOCK_NOTIFICATIONS = [
-  { id: 'notif-1', message: "Recruiter 'Sarah Williams' liked your project: 'Nexus - Social Platform'.", time: '2 hours ago', type: 'like' },
-  { id: 'notif-2', message: "Admin approved your project: 'Aura - Health Tracker' and it is now Public.", time: '5 hours ago', type: 'approval' },
-  { id: 'notif-3', message: "Recruiter 'Michael Chen' started following you.", time: '1 day ago', type: 'follow' },
-];
 
 // Mock Data
 const INITIAL_MY_PROJECTS = [
@@ -82,7 +78,49 @@ const StudentsDashbourd = () => {
   const [screenshotFiles, setScreenshotFiles] = useState([null, null, null, null, null]);
   const [screenshotPreviews, setScreenshotPreviews] = useState(['', '', '', '', '']);
 
-  const { token, user } = useAuth();
+  const { token, user, socket } = useAuth();
+  const [notifications, setNotifications] = useState([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifModal, setShowNotifModal] = useState(false);
+
+  const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const authHeaders = { Authorization: `Bearer ${token}` };
+
+  const fetchNotifications = useCallback(async () => {
+    if (!token) return;
+    try {
+      setNotifLoading(true);
+      const { data } = await axios.get(`${BASE_URL}/api/notifications?limit=5&page=1`, { headers: authHeaders });
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unreadCount || 0);
+    } catch (err) {
+      console.error('Error fetching notifications', err);
+    } finally {
+      setNotifLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
+
+  // Real-time socket push
+  useEffect(() => {
+    if (!socket) return;
+    const handler = (notif) => {
+      setNotifications(prev => [notif, ...prev.slice(0, 4)]);
+      setUnreadCount(prev => prev + 1);
+    };
+    socket.on('notification', handler);
+    return () => socket.off('notification', handler);
+  }, [socket]);
+
+  const markAllRead = async () => {
+    try {
+      await axios.patch(`${BASE_URL}/api/notifications/read-all`, {}, { headers: authHeaders });
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch { /* silent */ }
+  };
 
   // Animation Variants
   const containerVariants = {
@@ -646,35 +684,76 @@ const StudentsDashbourd = () => {
                 >
                   {/* Activity Feed Header */}
                   <div>
-                    <h3 className="font-bold text-white flex items-center gap-2 mb-4">
-                      <div className="relative">
-                        <Bell className="w-5 h-5 text-zinc-400" />
-                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-zinc-900"></span>
-                      </div>
-                      Activity Feed
-                    </h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-bold text-white flex items-center gap-2">
+                        <div className="relative">
+                          <Bell className="w-5 h-5 text-zinc-400" />
+                          {unreadCount > 0 && (
+                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-zinc-900" />
+                          )}
+                        </div>
+                        Activity Feed
+                        {unreadCount > 0 && (
+                          <span className="ml-1 text-xs bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded-full font-normal">
+                            {unreadCount} new
+                          </span>
+                        )}
+                      </h3>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllRead}
+                          title="Mark all as read"
+                          className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                        >
+                          <CheckCheck size={12} /> All read
+                        </button>
+                      )}
+                    </div>
 
                     <div className="space-y-4">
-                      {STUDENT_MOCK_NOTIFICATIONS.map((notif, index) => (
-                        <motion.div 
-                          key={notif.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          className="relative pl-6 pb-4 border-l border-zinc-800 last:border-0 last:pb-0 group"
-                        >
-                          {/* Timeline dot */}
-                          <div className="absolute -left-1.25 top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-700 ring-4 ring-zinc-900/50 group-hover:bg-indigo-400 transition-colors"></div>
-                          
-                          <p className="text-sm text-zinc-300 leading-snug mb-1">
-                            {notif.message}
-                          </p>
-                          <span className="text-xs text-zinc-600 font-medium block">
-                            {notif.time}
-                          </span>
-                        </motion.div>
-                      ))}
+                      {notifLoading ? (
+                        <div className="flex items-center justify-center py-6">
+                          <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />
+                        </div>
+                      ) : notifications.length === 0 ? (
+                        <div className="text-center py-6">
+                          <p className="text-zinc-600 text-sm">No notifications yet</p>
+                        </div>
+                      ) : (
+                        notifications.map((notif, index) => (
+                          <motion.div 
+                            key={notif._id || notif.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.07 }}
+                            className={`relative pl-6 pb-4 border-l last:border-0 last:pb-0 group ${
+                              !notif.isRead ? 'border-indigo-500/40' : 'border-zinc-800'
+                            }`}
+                          >
+                            {/* Timeline dot */}
+                            <div className={`absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-zinc-900/50 transition-colors ${
+                              !notif.isRead ? 'bg-indigo-400' : 'bg-zinc-700 group-hover:bg-indigo-400'
+                            }`} />
+                            
+                            <p className={`text-sm leading-snug mb-1 ${
+                              !notif.isRead ? 'text-zinc-100 font-medium' : 'text-zinc-400'
+                            }`}>
+                              {notif.message}
+                            </p>
+                            <span className="text-xs text-zinc-600 font-medium block">
+                              {new Date(notif.createdAt).toLocaleString()}
+                            </span>
+                          </motion.div>
+                        ))
+                      )}
                     </div>
+
+                    <button
+                      onClick={() => setShowNotifModal(true)}
+                      className="mt-4 w-full text-center text-xs text-indigo-400 hover:text-indigo-300 font-medium py-1.5 border border-indigo-500/20 hover:border-indigo-500/40 rounded-xl transition-all"
+                    >
+                      View all notifications →
+                    </button>
                   </div>
 
                   {/* Stats Section */}
@@ -699,6 +778,13 @@ const StudentsDashbourd = () => {
           )}
         </div>
       </div>
+      <NotificationsModal 
+        isOpen={showNotifModal} 
+        onClose={() => { 
+          setShowNotifModal(false); 
+          fetchNotifications(); 
+        }} 
+      />
     </>
   );
 };

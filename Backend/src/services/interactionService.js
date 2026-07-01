@@ -47,6 +47,7 @@ class InteractionService {
       return { status: 'unfollowed', recruiterId, studentId };
     } else {
       await Follower.create({ recruiterId, studentId });
+      eventEmitter.emit('StudentFollowed', { student, recruiterUser });
       return { status: 'followed', recruiterId, studentId };
     }
   }

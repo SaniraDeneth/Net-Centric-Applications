@@ -238,10 +238,10 @@ const ProjectDetail = () => {
         <div className="min-h-screen flex flex-col items-center justify-center gap-4">
           <p className="text-red-400 text-lg font-medium">{error || 'Project not found.'}</p>
           <button
-            onClick={() => navigate('/projects')}
+            onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Projects
+            <ArrowLeft className="w-4 h-4" /> Go Back
           </button>
         </div>
       </>
@@ -359,11 +359,11 @@ const ProjectDetail = () => {
         <motion.button
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          onClick={() => navigate('/projects')}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-8 text-sm group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          Back to Projects
+          Go Back
         </motion.button>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">

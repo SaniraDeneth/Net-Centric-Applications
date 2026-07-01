@@ -238,11 +238,20 @@ class ProjectService {
 
   async updateVisibility(projectId, isPublic, user) {
     if (user.role !== 'Recruiter' && user.role !== 'Admin') throw new Error('Forbidden: Only recruiters or admins can update public visibility status');
-    const project = await Project.findById(projectId);
+    const project = await Project.findById(projectId).populate('studentId', 'name email');
     if (!project) throw new Error('Project not found');
 
-    project.isPublic = isPublic !== undefined ? isPublic : true;
+    const wasPrivate = !project.isPublic;
+    const becomingPublic = isPublic === true || isPublic === 'true';
+
+    project.isPublic = isPublic !== undefined ? becomingPublic : true;
     await project.save();
+
+    // Emit notification only on private → public transition
+    if (wasPrivate && project.isPublic) {
+      eventEmitter.emit('ProjectMadePublic', { project, adminUser: user });
+    }
+
     return project;
   }
 }
