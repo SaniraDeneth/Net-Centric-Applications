@@ -6,6 +6,16 @@ const escapeRegex = (string) => {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 };
 
+const sanitizeUrl = (url) => {
+  if (!url) return '';
+  let cleanUrl = url.trim();
+  if (/^javascript:/i.test(cleanUrl.replace(/\s/g, ''))) return '';
+  if (!/^https?:\/\//i.test(cleanUrl)) {
+    cleanUrl = 'https://' + cleanUrl;
+  }
+  return cleanUrl;
+};
+
 
 class ProjectService {
   async createProject(studentId, projectData, files, user) {
@@ -35,8 +45,8 @@ class ProjectService {
       technologiesUsed: technologiesUsed || [],
       coverImage: coverImage || projectData.coverImage || '',
       additionalImages: additionalImages.length > 0 ? additionalImages : (projectData.additionalImages || []),
-      demoUrl: projectData.demoUrl || '',
-      gitRepoUrl: projectData.gitRepoUrl || '',
+      demoUrl: sanitizeUrl(projectData.demoUrl),
+      gitRepoUrl: sanitizeUrl(projectData.gitRepoUrl),
       isPublic: projectData.isPublic === 'true' || projectData.isPublic === true
     });
 
@@ -178,8 +188,8 @@ class ProjectService {
     project.technologiesUsed = technologiesUsed !== undefined ? technologiesUsed : project.technologiesUsed;
     project.coverImage = coverImage;
     project.additionalImages = additionalImages;
-    project.demoUrl = updateData.demoUrl !== undefined ? updateData.demoUrl : project.demoUrl;
-    project.gitRepoUrl = updateData.gitRepoUrl !== undefined ? updateData.gitRepoUrl : project.gitRepoUrl;
+    project.demoUrl = updateData.demoUrl !== undefined ? sanitizeUrl(updateData.demoUrl) : project.demoUrl;
+    project.gitRepoUrl = updateData.gitRepoUrl !== undefined ? sanitizeUrl(updateData.gitRepoUrl) : project.gitRepoUrl;
     project.isPublic = updateData.isPublic !== undefined ? (updateData.isPublic === 'true' || updateData.isPublic === true) : project.isPublic;
 
     await project.save();
