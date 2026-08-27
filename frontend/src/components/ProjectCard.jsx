@@ -34,6 +34,7 @@ const ProjectCard = ({
   onDelete,
   hoverBorderClass = 'hover:border-indigo-500/30',
   hoverTextClass = 'group-hover:text-indigo-400',
+  isActionLoading = false,
   variants
 }) => {
   const navigate = useNavigate();
@@ -76,9 +77,10 @@ const ProjectCard = ({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (onLike) onLike(project.id || project._id);
+              if (onLike && !isActionLoading) onLike(project.id || project._id);
             }}
-            className="absolute top-4 right-4 z-20 p-2.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60 transition-all group/btn shadow-xl"
+            disabled={isActionLoading}
+            className={`absolute top-4 right-4 z-20 p-2.5 rounded-full backdrop-blur-md border border-white/10 transition-all group/btn shadow-xl ${isActionLoading ? 'bg-black/20 cursor-not-allowed opacity-50' : 'bg-black/40 hover:bg-black/60'}`}
           >
             <Heart className={`w-5 h-5 transition-colors ${isLiked ? 'fill-rose-500 text-rose-500' : 'text-white/80 group-hover/btn:text-rose-400'}`} />
           </button>
@@ -177,9 +179,10 @@ const ProjectCard = ({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (onEdit) onEdit(project);
+                  if (onEdit && !isActionLoading) onEdit(project);
                 }}
-                className="p-2 rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-indigo-400 transition-colors"
+                disabled={isActionLoading}
+                className={`p-2 rounded-full transition-colors ${isActionLoading ? 'text-zinc-600 cursor-not-allowed' : 'hover:bg-zinc-800 text-zinc-400 hover:text-indigo-400'}`}
                 title="Edit Project"
               >
                 <Edit3 size={16} />
@@ -188,9 +191,10 @@ const ProjectCard = ({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (onDelete) onDelete(project.id || project._id);
+                    if (onDelete && !isActionLoading) onDelete(project.id || project._id);
                   }}
-                  className="p-2 rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-rose-400 transition-colors"
+                  disabled={isActionLoading}
+                  className={`p-2 rounded-full transition-colors ${isActionLoading ? 'text-zinc-600 cursor-not-allowed' : 'hover:bg-zinc-800 text-zinc-400 hover:text-rose-400'}`}
                   title="Delete Project"
                 >
                   <Trash2 size={16} />

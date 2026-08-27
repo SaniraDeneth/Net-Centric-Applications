@@ -51,6 +51,9 @@ const RecruiterDashboard = () => {
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [selectedStudentProjects, setSelectedStudentProjects] = useState([]);
     const [isModalLoading, setIsModalLoading] = useState(false);
+    
+    // Global action loading state for like/follow
+    const [actionLoadingId, setActionLoadingId] = useState(null);
 
     // Initial Load & Tab switching fetches
     useEffect(() => {
@@ -198,6 +201,7 @@ const RecruiterDashboard = () => {
     // Interaction handlers
     const toggleLike = async (projectId) => {
         try {
+            setActionLoadingId(`like-${projectId}`);
             const res = await axios.post(`${backendUrl}/api/projects/${projectId}/likes`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -235,11 +239,14 @@ const RecruiterDashboard = () => {
             fetchQuickStats();
         } catch (err) {
             console.error('Failed to toggle like:', err);
+        } finally {
+            setActionLoadingId(null);
         }
     };
 
     const toggleFollow = async (studentId) => {
         try {
+            setActionLoadingId(`follow-${studentId}`);
             const res = await axios.post(`${backendUrl}/api/users/${studentId}/follow`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -265,6 +272,8 @@ const RecruiterDashboard = () => {
             if (showOnlyFollowedStudents) fetchDirectory(studentsPage, directorySearchQuery);
         } catch (err) {
             console.error('Failed to toggle follow:', err);
+        } finally {
+            setActionLoadingId(null);
         }
     };
 
@@ -436,12 +445,14 @@ const RecruiterDashboard = () => {
                                                                         technologies: project.technologiesUsed || []
                                                                     }}
                                                                     index={index}
+                                                                    showAuthorBadge={true}
+                                                                    showAuthorFooter={true}
                                                                     showLikeButton={true}
                                                                     isLiked={project.userLiked}
                                                                     onLike={toggleLike}
-                                                                    showAuthorFooter={true}
-                                                                    hoverBorderClass="hover:border-emerald-500/30"
-                                                                    hoverTextClass="group-hover:text-emerald-400"
+                                                                    isActionLoading={actionLoadingId === `like-${project.id || project._id}`}
+                                                                    hoverBorderClass="hover:border-indigo-500/30"
+                                                                    hoverTextClass="group-hover:text-indigo-400"
                                                                     variants={itemVariants}
                                                                 />
                                                             ))}
@@ -566,14 +577,17 @@ const RecruiterDashboard = () => {
                                                                             </div>
                                                                             <button
                                                                                 onClick={() => toggleFollow(student.id || student._id)}
-                                                                                className={`p-2 rounded-xl border transition-all flex items-center justify-center shadow-sm cursor-pointer ${
-                                                                                    isFollowed 
-                                                                                    ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700/80 hover:text-white' 
-                                                                                    : 'bg-emerald-500 hover:bg-emerald-400 border-emerald-400 text-white shadow-emerald-500/20'
+                                                                                disabled={actionLoadingId === `follow-${student.id || student._id}`}
+                                                                                className={`p-2 rounded-xl border transition-all flex items-center justify-center shadow-sm ${
+                                                                                    actionLoadingId === `follow-${student.id || student._id}`
+                                                                                    ? 'bg-zinc-800 border-zinc-700 text-zinc-500 cursor-not-allowed opacity-50'
+                                                                                    : isFollowed 
+                                                                                    ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700/80 hover:text-white cursor-pointer' 
+                                                                                    : 'bg-emerald-500 hover:bg-emerald-400 border-emerald-400 text-white shadow-emerald-500/20 cursor-pointer'
                                                                                 }`}
                                                                                 title={isFollowed ? 'Unfollow' : 'Follow'}
                                                                             >
-                                                                                {isFollowed ? <UserMinus className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
+                                                                                {actionLoadingId === `follow-${student.id || student._id}` ? <Loader2 className="w-5 h-5 animate-spin" /> : (isFollowed ? <UserMinus className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />)}
                                                                             </button>
                                                                         </div>
                                                                         
@@ -664,6 +678,7 @@ const RecruiterDashboard = () => {
                                                                     showAuthorFooter={true}
                                                                     hoverBorderClass="hover:border-emerald-500/30"
                                                                     hoverTextClass="group-hover:text-emerald-400"
+                                                                    isActionLoading={actionLoadingId === `like-${project.id || project._id}`}
                                                                     variants={itemVariants}
                                                                 />
                                                             ))}

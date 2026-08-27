@@ -70,6 +70,8 @@ const AdminDashboard = () => {
     }
   };
 
+  const [actionLoadingId, setActionLoadingId] = useState(null);
+
   // Run user directory search when filters change
   useEffect(() => {
     if (activeTab === 'users' && token) {
@@ -82,6 +84,7 @@ const AdminDashboard = () => {
 
   const handlePublishProject = async (projectId) => {
     try {
+      setActionLoadingId(`publish-${projectId}`);
       setErrorMsg('');
       setSuccessMsg('');
       const res = await axios.patch(
@@ -93,12 +96,15 @@ const AdminDashboard = () => {
       fetchData();
     } catch (err) {
       setErrorMsg(err.response?.data?.message || 'Failed to publish project');
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
   const handleDeleteProject = async (projectId) => {
     if (!window.confirm('Are you sure you want to delete this project? This action is permanent.')) return;
     try {
+      setActionLoadingId(`delete-${projectId}`);
       setErrorMsg('');
       setSuccessMsg('');
       await axios.delete(`${backendUrl}/api/projects/${projectId}`, {
@@ -108,11 +114,14 @@ const AdminDashboard = () => {
       fetchData();
     } catch (err) {
       setErrorMsg(err.response?.data?.message || 'Failed to delete project');
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
   const handleUpdateUserRole = async (userId, newRole) => {
     try {
+      setActionLoadingId(`role-${userId}`);
       setErrorMsg('');
       setSuccessMsg('');
       await axios.patch(
@@ -124,11 +133,14 @@ const AdminDashboard = () => {
       fetchData();
     } catch (err) {
       setErrorMsg(err.response?.data?.message || 'Failed to update user role');
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
   const handleToggleUserVerification = async (userId, currentVerification) => {
     try {
+      setActionLoadingId(`verify-${userId}`);
       setErrorMsg('');
       setSuccessMsg('');
       await axios.patch(
@@ -140,12 +152,15 @@ const AdminDashboard = () => {
       fetchData();
     } catch (err) {
       setErrorMsg(err.response?.data?.message || 'Failed to toggle user verification');
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
   const handleDeleteUser = async (userId) => {
     if (!window.confirm('Are you sure you want to delete this user? All their projects will also be deleted.')) return;
     try {
+      setActionLoadingId(`delete-user-${userId}`);
       setErrorMsg('');
       setSuccessMsg('');
       await axios.delete(`${backendUrl}/api/users/${userId}`, {
@@ -155,6 +170,8 @@ const AdminDashboard = () => {
       fetchData();
     } catch (err) {
       setErrorMsg(err.response?.data?.message || 'Failed to delete user');
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -455,6 +472,7 @@ const AdminDashboard = () => {
                             <Button 
                               onClick={() => handlePublishProject(project.id)}
                               variant="primary"
+                              isLoading={actionLoadingId === `publish-${project.id}`}
                               className="px-6 py-2.5 text-sm rounded-xl!"
                             >
                               <Check className="w-4 h-4" /> Publish / Make Public
@@ -471,10 +489,15 @@ const AdminDashboard = () => {
                             )}
                             <button
                               onClick={() => handleDeleteProject(project.id)}
-                              className="ml-auto text-red-400 hover:text-red-300 hover:bg-red-900/20 p-2.5 rounded-xl border border-transparent hover:border-red-900/30 transition-all"
+                              disabled={actionLoadingId === `delete-${project.id}`}
+                              className={`ml-auto p-2.5 rounded-xl border transition-all ${
+                                actionLoadingId === `delete-${project.id}`
+                                  ? 'text-zinc-600 bg-red-900/10 border-transparent cursor-not-allowed'
+                                  : 'text-red-400 hover:text-red-300 hover:bg-red-900/20 border-transparent hover:border-red-900/30'
+                              }`}
                               title="Delete unethical or unwanted project"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              {actionLoadingId === `delete-${project.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                             </button>
                           </div>
                         </div>
@@ -559,7 +582,8 @@ const AdminDashboard = () => {
                               <select
                                 value={user.role}
                                 onChange={(e) => handleUpdateUserRole(user.id, e.target.value)}
-                                className="bg-zinc-800 border border-zinc-700 rounded-lg py-1 px-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                disabled={actionLoadingId === `role-${user.id}`}
+                                className="bg-zinc-800 border border-zinc-700 rounded-lg py-1 px-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <option value="Student">Student</option>
                                 <option value="Recruiter">Recruiter</option>
@@ -569,23 +593,25 @@ const AdminDashboard = () => {
                             <td className="px-6 py-4">
                               <button
                                 onClick={() => handleToggleUserVerification(user.id, user.isVerified)}
-                                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                                disabled={actionLoadingId === `verify-${user.id}`}
+                                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                                   user.isVerified
                                     ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                                     : 'bg-zinc-800 text-zinc-400 border-zinc-700'
                                 }`}
                               >
-                                <UserCheck className="w-3 h-3" />
+                                {actionLoadingId === `verify-${user.id}` ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserCheck className="w-3 h-3" />}
                                 {user.isVerified ? 'Verified' : 'Unverified'}
                               </button>
                             </td>
                             <td className="px-6 py-4 text-right">
                               <button
                                 onClick={() => handleDeleteUser(user.id)}
-                                className="text-red-400 hover:text-red-300 hover:bg-red-900/20 p-2 rounded-xl transition-colors border border-transparent hover:border-red-900/30"
+                                disabled={actionLoadingId === `delete-user-${user.id}`}
+                                className="text-red-400 hover:text-red-300 hover:bg-red-900/20 p-2 rounded-xl transition-colors border border-transparent hover:border-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Delete user account"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                {actionLoadingId === `delete-user-${user.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                               </button>
                             </td>
                           </tr>
@@ -674,16 +700,10 @@ const AdminDashboard = () => {
 
                         <Button
                           type="submit"
-                          disabled={inviteLoading}
-                          fullWidth
-                          className="mt-6 py-3 text-sm rounded-xl! font-semibold flex items-center justify-center gap-2"
+                          isLoading={inviteLoading}
+                          className="w-full"
                         >
-                          {inviteLoading ? (
-                            <RefreshCw className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Send className="w-4 h-4" />
-                          )}
-                          Dispatch Invitation
+                          Generate & Send Invite
                         </Button>
                       </form>
                     </>

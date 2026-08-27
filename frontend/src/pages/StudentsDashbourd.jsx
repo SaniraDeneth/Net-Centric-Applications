@@ -521,7 +521,7 @@ const StudentsDashbourd = () => {
                     <Button type="button" variant="secondary" onClick={handleCloseForm}>
                       Cancel
                     </Button>
-                    <Button type="submit">
+                    <Button type="submit" isLoading={isLoading}>
                       {editingProject ? 'Save Changes' : 'Create Project'}
                     </Button>
                   </div>
@@ -609,6 +609,7 @@ const StudentsDashbourd = () => {
                               onDelete={handleDeleteProject}
                               hoverBorderClass="hover:border-indigo-500/30"
                               hoverTextClass="group-hover:text-indigo-400"
+                              isActionLoading={isLoading}
                               variants={itemVariants}
                             />
                           ))}
@@ -665,6 +666,7 @@ const StudentsDashbourd = () => {
                               showAuthorBadge={true}
                               hoverBorderClass="hover:border-purple-500/30"
                               hoverTextClass="group-hover:text-purple-400"
+                              isActionLoading={isLoading}
                               variants={itemVariants}
                             />
                           ))}
