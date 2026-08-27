@@ -36,8 +36,7 @@ const allowedOrigins = [
 const isOriginAllowed = (origin) => {
   if (!origin) return true;
   if (allowedOrigins.includes(origin)) return true;
-  // Dynamically allow Vercel previews and deployment domains
-  if (origin.endsWith('.vercel.app')) return true;
+  // Strictly rely on FRONTEND_URL or explicit allowedOrigins
   return false;
 };
 
