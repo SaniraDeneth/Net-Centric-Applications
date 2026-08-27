@@ -36,7 +36,7 @@ const getAllUsers = async (req, res) => {
     }
 
     const pageNum = parseInt(page) || 1;
-    const limitNum = parseInt(limit) || 10;
+    const limitNum = Math.min(parseInt(limit) || 10, 100);
     const skip = (pageNum - 1) * limitNum;
 
     const total = await User.countDocuments(query);

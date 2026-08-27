@@ -83,7 +83,7 @@ class ProjectService {
     }
 
     const pageNum = parseInt(page) || 1;
-    const limitNum = parseInt(limit) || 10;
+    const limitNum = Math.min(parseInt(limit) || 10, 100);
     const skip = (pageNum - 1) * limitNum;
 
     const total = await Project.countDocuments(query);
@@ -189,7 +189,7 @@ class ProjectService {
   async getLikedProjects(user, queryParams) {
     const { page, limit } = queryParams;
     const pageNum = parseInt(page) || 1;
-    const limitNum = parseInt(limit) || 10;
+    const limitNum = Math.min(parseInt(limit) || 10, 100);
     const skip = (pageNum - 1) * limitNum;
 
     const Like = require('../models/Like');

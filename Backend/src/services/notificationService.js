@@ -5,7 +5,7 @@ class NotificationService {
     const userId = user._id || user.id;
     const { page, limit } = queryParams;
     const pageNum = parseInt(page) || 1;
-    const limitNum = parseInt(limit) || 20;
+    const limitNum = Math.min(parseInt(limit) || 20, 100);
     const skip = (pageNum - 1) * limitNum;
 
     const total = await Notification.countDocuments({ userId });
